@@ -1,0 +1,9 @@
+fastapi>=0.95.0
+uvicorn[standard]>=0.21.0          # ASGI server to run FastAPI apps
+pandas>=1.0.0                      # your existing dependency
+requests>=2.25.0                   # your existing dependency
+snowflake-connector-python>=2.7.0 # your existing dependency
+
+python-dotenv>=0.21.0              # to load .env environment variables
+sqlalchemy>=1.4.0                  # if you use DB ORM (optional)
+databases>=0.5.0                   # async DB access (optional)
