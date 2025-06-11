@@ -1,98 +1,17 @@
-<!DOCTYPE html>
-<meta charset="utf-8">
-
-<!-- Load d3.js -->
-<script src="https://d3js.org/d3.v4.js"></script>
-
-<!-- Create a div where the graph will take place -->
-<div id="my_dataviz"></div>
-
-
-<script>
-
-// set the dimensions and margins of the graph
-var margin = {top: 10, right: 30, bottom: 20, left: 50},
-    width = 460 - margin.left - margin.right,
-    height = 400 - margin.top - margin.bottom;
-
-// append the svg object to the body of the page
-var svg = d3.select("#my_dataviz")
-  .append("svg")
-    .attr("width", width + margin.left + margin.right)
-    .attr("height", height + margin.top + margin.bottom)
-  .append("g")
-    .attr("transform",
-          "translate(" + margin.left + "," + margin.top + ")");
-
-// Parse the Data
-d3.csv("https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_stacked.csv", function(data) {
-
-  // List of subgroups = header of the csv files = soil condition here
-  var subgroups = data.columns.slice(1)
-
-  // List of groups = species here = value of the first column called group -> I show them on the X axis
-  var groups = d3.map(data, function(d){return(d.group)}).keys()
-
-  // Add X axis
-  var x = d3.scaleBand()
-      .domain(groups)
-      .range([0, width])
-      .padding([0.2])
-  svg.append("g")
-    .attr("transform", "translate(0," + height + ")")
-    .call(d3.axisBottom(x).tickSizeOuter(0));
-
-  // Add Y axis
-  var y = d3.scaleLinear()
-    .domain([0, 60])
-    .range([ height, 0 ]);
-  svg.append("g")
-    .call(d3.axisLeft(y));
-
-  // color palette = one color per subgroup
-  var color = d3.scaleOrdinal()
-    .domain(subgroups)
-    .range(['#e41a1c','#377eb8','#4daf4a'])
-
-  //stack the data? --> stack per subgroup
-  var stackedData = d3.stack()
-    .keys(subgroups)
-    (data)
-
-  // Show the bars
-  svg.append("g")
-    .selectAll("g")
-    // Enter in the stack data = loop key per key = group per group
-    .data(stackedData)
-    .enter().append("g")
-      .attr("fill", function(d) { return color(d.key); })
-      .selectAll("rect")
-      // enter a second time = loop subgroup per subgroup to add all rectangles
-      .data(function(d) { return d; })
-      .enter().append("rect")
-        .attr("x", function(d) { return x(d.data.group); })
-        .attr("y", function(d) { return y(d[1]); })
-        .attr("height", function(d) { return y(d[0]) - y(d[1]); })
-        .attr("width",x.bandwidth())
-})
-
-</script>
-////////////////
-
-
-
 import React, { useEffect, useRef } from "react";
 import * as d3 from "d3";
 
-const StackedBarChart = () => {
+const StackedBarChart = ({ data }) => {
   const chartRef = useRef();
 
   useEffect(() => {
+    if (!data || data.length === 0) return;
+
     const margin = { top: 10, right: 30, bottom: 20, left: 50 };
     const width = 460 - margin.left - margin.right;
     const height = 400 - margin.top - margin.bottom;
 
-    // Clear existing SVG (if any)
+    // Clear previous chart
     d3.select(chartRef.current).selectAll("*").remove();
 
     const svg = d3
@@ -103,58 +22,60 @@ const StackedBarChart = () => {
       .append("g")
       .attr("transform", `translate(${margin.left},${margin.top})`);
 
-    // Load CSV data
-    d3.csv(
-      "https://raw.githubusercontent.com/holtzy/D3-graph-gallery/master/DATA/data_stacked.csv",
-      function (data) {
-        const subgroups = data.columns.slice(1);
-        const groups = d3.map(data, (d) => d.group).keys();
+    // Assume data is an array of objects like:
+    // [{ group: "A", subgroup1: 10, subgroup2: 20, subgroup3: 15 }, ...]
 
-        // X scale
-        const x = d3
-          .scaleBand()
-          .domain(groups)
-          .range([0, width])
-          .padding([0.2]);
+    // Extract subgroup keys (all keys except 'group')
+    const subgroups = Object.keys(data[0]).filter((k) => k !== "group");
 
-        svg
-          .append("g")
-          .attr("transform", `translate(0,${height})`)
-          .call(d3.axisBottom(x).tickSizeOuter(0));
+    // Extract group names
+    const groups = data.map((d) => d.group);
 
-        // Y scale
-        const y = d3.scaleLinear().domain([0, 60]).range([height, 0]);
+    // X scale
+    const x = d3
+      .scaleBand()
+      .domain(groups)
+      .range([0, width])
+      .padding([0.2]);
 
-        svg.append("g").call(d3.axisLeft(y));
+    svg
+      .append("g")
+      .attr("transform", `translate(0,${height})`)
+      .call(d3.axisBottom(x).tickSizeOuter(0));
 
-        // Color scale
-        const color = d3
-          .scaleOrdinal()
-          .domain(subgroups)
-          .range(["#e41a1c", "#377eb8", "#4daf4a"]);
-
-        // Stack data
-        const stackedData = d3.stack().keys(subgroups)(data);
-
-        // Draw bars
-        svg
-          .append("g")
-          .selectAll("g")
-          .data(stackedData)
-          .enter()
-          .append("g")
-          .attr("fill", (d) => color(d.key))
-          .selectAll("rect")
-          .data((d) => d)
-          .enter()
-          .append("rect")
-          .attr("x", (d) => x(d.data.group))
-          .attr("y", (d) => y(d[1]))
-          .attr("height", (d) => y(d[0]) - y(d[1]))
-          .attr("width", x.bandwidth());
-      }
+    // Y scale — compute max sum of stacked groups for dynamic domain
+    const maxGroupSum = d3.max(data, (d) =>
+      subgroups.reduce((sum, key) => sum + +d[key], 0)
     );
-  }, []);
+
+    const y = d3.scaleLinear().domain([0, maxGroupSum]).range([height, 0]);
+
+    svg.append("g").call(d3.axisLeft(y));
+
+    // Color scale
+    const color = d3
+      .scaleOrdinal()
+      .domain(subgroups)
+      .range(["#e41a1c", "#377eb8", "#4daf4a"]); // You can customize colors or pass as props
+
+    // Stack data
+    const stackedData = d3.stack().keys(subgroups)(data);
+
+    // Draw bars
+    svg
+      .append("g")
+      .selectAll("g")
+      .data(stackedData)
+      .join("g")
+      .attr("fill", (d) => color(d.key))
+      .selectAll("rect")
+      .data((d) => d)
+      .join("rect")
+      .attr("x", (d) => x(d.data.group))
+      .attr("y", (d) => y(d[1]))
+      .attr("height", (d) => y(d[0]) - y(d[1]))
+      .attr("width", x.bandwidth());
+  }, [data]);
 
   return (
     <div>

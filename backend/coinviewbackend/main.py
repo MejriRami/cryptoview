@@ -1,5 +1,6 @@
 from fastapi import FastAPI, Query, Body
 from pydantic import BaseModel
+import uvicorn
 
 app = FastAPI(
     title="Crypto Analytics API",
@@ -21,17 +22,17 @@ class SignUpRequest(BaseModel):
     password: str
     confirmPassword: str
 
-@app.post("/api/auth/signin", tags=["Authentication"])
+@app.post("/auth/signin", tags=["Authentication"])
 async def sign_in(credentials: SignInRequest):
     """Sign in with email and password"""
     return {"token": "jwt.token.here", "user": {}}
 
-@app.post("/api/auth/signup", tags=["Authentication"])
+@app.post("/auth/signup", tags=["Authentication"])
 async def sign_up(user_data: SignUpRequest):
     """Register new user"""
     return {"message": "User created successfully"}
 
-@app.post("/api/auth/google/signin", tags=["Authentication"])
+@app.post("/auth/google/signin", tags=["Authentication"])
 async def google_sign_in(token: str = Body(..., embed=True)):
     """Sign in with Google"""
     return {"token": "jwt.token.here", "user": {}}
@@ -40,12 +41,12 @@ async def google_sign_in(token: str = Body(..., embed=True)):
 # Market Insights Endpoints
 # --------------------------
 
-@app.get("/api/insights/market-cap", tags=["Market Insights"])
+@app.get("/insights/market-cap", tags=["Market Insights"])
 async def get_market_cap(date: str = Query(None)):
     """Get market capitalization trends"""
     return {"data": "market_cap_trends"}
 
-@app.get("/api/insights/coin", tags=["Market Insights"])
+@app.get("/insights/coin", tags=["Market Insights"])
 async def get_coin_insights(
     coinId: str = Query(...),
     start: str = Query(...),
@@ -60,12 +61,12 @@ async def get_coin_insights(
 # Coin Operations Endpoints
 # --------------------------
 
-@app.post("/api/coin/trading-view", tags=["Coin Operations"])
+@app.post("/coin/trading-view", tags=["Coin Operations"])
 async def trading_view(coinId: str = Body(..., embed=True)):
     """Redirect to trading terminal"""
     return {"redirect_url": f"https://geckoterminal.com/{coinId}"}
 
-@app.get("/api/coin/metadata", tags=["Coin Operations"])
+@app.get("/coin/metadata", tags=["Coin Operations"])
 async def coin_metadata(coinId: str = Query(...)):
     """Get coin metadata"""
     return {
@@ -78,7 +79,7 @@ async def coin_metadata(coinId: str = Query(...)):
 # User Endpoints
 # --------------------------
 
-@app.post("/api/user/portfolio/add", tags=["User Actions"])
+@app.post("/user/portfolio/add", tags=["User Actions"])
 async def add_to_portfolio(
     userId: str = Body(...),
     coinId: str = Body(...)
@@ -95,12 +96,12 @@ class AlertRequest(BaseModel):
     coinId: str
     threshold: float
 
-@app.post("/api/alerts/price/high", tags=["Alerts"])
+@app.post("/alerts/price/high", tags=["Alerts"])
 async def set_high_alert(alert: AlertRequest):
     """Set high price alert"""
     return {"message": f"High price alert set for {alert.coinId} at ${alert.threshold}"}
 
-@app.post("/api/alerts/price/low", tags=["Alerts"])
+@app.post("/alerts/price/low", tags=["Alerts"])
 async def set_low_alert(alert: AlertRequest):
     """Set low price alert"""
     return {"message": f"Low price alert set for {alert.coinId} at ${alert.threshold}"}
@@ -109,12 +110,24 @@ async def set_low_alert(alert: AlertRequest):
 # Additional Endpoints
 # --------------------------
 
-@app.get("/api/insights/top-gainers", tags=["Market Insights"])
+@app.get("/insights/top-gainers", tags=["Market Insights"])
 async def get_top_gainers():
     """Get top gaining coins"""
     return {"top_gainers": ["BTC", "ETH", "SOL"]}
 
-@app.get("/api/insights/trending", tags=["Market Insights"])
+@app.get("/insights/trending", tags=["Market Insights"])
 async def get_trending_coins():
     """Get trending coins"""
     return {"trending": ["BTC", "AVAX", "DOT"]}
+
+
+
+
+
+
+
+
+
+
+if app == "__main__":
+    uvicorn.run(app, host="localhost", port=8000)

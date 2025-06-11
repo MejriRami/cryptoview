@@ -1,15 +1,11 @@
 import axios from 'axios';
-
-const BASE_URL = 'http://localhost:8000/api'; // 🔁 adjust if deployed
-
+const BASE_URL = 'http://localhost:8000'; // 🔁 adjust if deployed
 // -----------------------------
 // 🟢 Authentication
 // -----------------------------
-
 export const signIn = async (email, password) => {
   const res = await axios.post(`${BASE_URL}/auth/signin`, { email, password });
   return res.data;
-
   // Example response:
   // {
   //   token: "jwt.token.here",
